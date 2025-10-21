@@ -1,0 +1,48 @@
+# Rust
+/src-tauri/target/
+**/*.rs.bk
+*.pdb
+
+# Node
+node_modules/
+dist/
+*.log
+.npm
+.eslintcache
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+python_runtime/
+python/build/
+python/dist/
+python/*.spec
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Tauri
+src-tauri/target/
+src-tauri/Cargo.lock
+
+# 临时文件
+*.tmp
+*.bak
+*.swp

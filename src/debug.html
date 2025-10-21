@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NoPickie 调试器</title>
+  <link rel="stylesheet" href="debug.css" />
+  <style>
+    body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; }
+  </style>
+  </head>
+<body>
+  <div class="debug-container">
+    <div class="status-bar">
+      <span id="status-indicator" class="status normal">NORMAL</span>
+      <div class="stats">
+        <span id="stat-count">Count: 0</span>
+        <span id="stat-duration">Duration: 0.0s</span>
+      </div>
+    </div>
+    <div class="video-wrap">
+      <img id="video" alt="video" />
+    </div>
+  </div>
+  <script type="module" src="debug.js"></script>
+</body>
+</html>
+
+
+

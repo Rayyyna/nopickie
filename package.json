@@ -1,0 +1,26 @@
+{
+  "name": "nopickie",
+  "version": "1.0.0",
+  "description": "智能挠头检测器 - Tauri 版本",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "keywords": [
+    "tauri",
+    "detector",
+    "mediapipe"
+  ],
+  "author": "Rayna",
+  "license": "MIT",
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}
+
+
+
+
