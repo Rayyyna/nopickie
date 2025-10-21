@@ -342,11 +342,9 @@ pub fn run() {
             let detector_clone = detector.clone();
             let state_for_menu = app_state_for_setup.clone();
             
-            // 加载托盘图标
-            let icon = app.default_window_icon().cloned().unwrap();
-            
             let _tray = tauri::tray::TrayIconBuilder::new()
-                .icon(icon)
+                .icon_as_template(true)
+                .title("🖐️")
                 .tooltip("NoPickie - 挠头检测器")
                 .menu(&menu)
                 .on_menu_event(move |app, event| {
