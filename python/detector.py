@@ -238,11 +238,13 @@ class HeadScratchDetector:
                 
                 if self.scratch_duration >= self.time_threshold:
                     # 达到时长阈值，触发
-                    if self.current_state != "Detected":
-                        # 状态变为触发（第一次）
-                        self.current_state = "Detected"
-                        self.trigger_count += 1
-                        self.last_trigger_time = current_time
+                    self.current_state = "Detected"
+                    self.trigger_count += 1
+                    self.last_trigger_time = current_time
+                    
+                    # 🔑 重置计时器，允许重复触发（每隔阈值时间提醒一次）
+                    self.scratch_start_time = current_time
+                    self.scratch_duration = 0.0
                 else:
                     # 还在计时中
                     self.current_state = "Warning"

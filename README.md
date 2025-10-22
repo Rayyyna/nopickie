@@ -2,6 +2,19 @@
 
 > 😊 AI 帮你管住手 😊
 
+<div align="center">
+
+[![下载最新版本](https://img.shields.io/badge/下载-NoPickie%20v1.1.0-FDB750?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/Rayyyna/nopickie/releases/latest)
+[![GitHub release](https://img.shields.io/github/v/release/Rayyyna/nopickie?style=flat-square)](https://github.com/Rayyyna/nopickie/releases/latest)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-macOS-lightgrey.svg?style=flat-square)](https://www.apple.com/macos)
+
+**[📥 立即下载](https://github.com/Rayyyna/nopickie/releases/latest) | [📖 使用文档](#-使用指南) | [❓ 常见问题](#-常见问题)**
+
+</div>
+
+---
+
 智能识别手部动作，帮助检测并控制以下手贱行为：
 
 - 🤚 爱抠头
@@ -48,9 +61,13 @@ pip3 install opencv-python mediapipe numpy
 
 ### 第二步：安装应用
 
-1. 下载 `NoPickie_1.0.0_aarch64.dmg`
-2. 双击 DMG 文件挂载
-3. 将 NoPickie.app 拖到"应用程序"文件夹
+<div align="center">
+
+**[⬇️ 直接下载 NoPickie v1.1.0 (9.3 MB)](https://github.com/Rayyyna/nopickie/releases/download/v1.1.0/NoPickie_1.1.0_aarch64.dmg)**
+
+
+</div>
+
 
 ### 第三步：首次运行
 

@@ -2,16 +2,20 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   
-  --primary-color: #4a90e2;
-  --success-color: #2ecc71;
-  --warning-color: #f39c12;
-  --danger-color: #e74c3c;
-  --bg-color: #f5f7fa;
-  --card-bg: #ffffff;
-  --text-color: #2c3e50;
-  --text-secondary: #7f8c8d;
-  --border-color: #dfe4ea;
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* 黄色系配色 */
+  --primary-color: #FDB750;
+  --primary-dark: #F9A825;
+  --primary-light: #FFD54F;
+  --success-color: #FDB750;
+  --warning-color: #FF9800;
+  --danger-color: #FF6F00;
+  --bg-color: #FFFBF0;
+  --card-bg: #FFFFFF;
+  --text-color: #5D4E37;
+  --text-secondary: #A89968;
+  --border-color: #FFE8B8;
+  --shadow: 0 2px 12px rgba(253, 183, 80, 0.15);
+  --shadow-hover: 0 4px 16px rgba(253, 183, 80, 0.25);
 }
 
 * {
@@ -85,18 +89,18 @@ h1 {
 }
 
 .badge-running {
-  background: #3498db;
+  background: var(--primary-color);
   color: white;
 }
 
 .badge-warning {
-  background: #f39c12;
+  background: var(--warning-color);
   color: white;
   animation: pulse 1s infinite;
 }
 
 .badge-detected {
-  background: #e74c3c;
+  background: var(--danger-color);
   color: white;
   animation: shake 0.5s;
 }
@@ -160,7 +164,7 @@ h1 {
 
 .btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-hover);
 }
 
 .btn:active:not(:disabled) {
@@ -173,21 +177,43 @@ h1 {
 }
 
 .btn-primary {
-  background: var(--success-color);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #27ae60;
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
 }
 
 .btn-secondary {
-  background: var(--danger-color);
+  background: linear-gradient(135deg, var(--danger-color) 0%, #E65100 100%);
   color: white;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #c0392b;
+  background: linear-gradient(135deg, #E65100 0%, var(--danger-color) 100%);
+}
+
+/* 辅助功能按钮 */
+.controls-secondary {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.controls-secondary .btn {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFE8B8 100%);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+.controls-secondary .btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+  color: white;
+  border-color: var(--primary-color);
 }
 
 /* 日志卡片 */
@@ -250,9 +276,10 @@ h1 {
 .info {
   text-align: center;
   padding: 1rem;
-  background: #e8f4f8;
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFECB3 100%);
   border-radius: 8px;
-  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
   font-size: 0.9rem;
 }
 

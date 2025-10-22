@@ -234,6 +234,75 @@ async fn get_detection_status(
 
 // 系统通知已删除，改用自定义弹窗
 
+// Tauri 命令：切换调试窗口
+#[tauri::command]
+async fn toggle_debug_window(app: tauri::AppHandle) -> Result<(), String> {
+    println!("🧪 切换调试窗口");
+    
+    if let Some(debug_window) = app.get_webview_window("debug") {
+        // 窗口存在，切换显隐
+        let is_visible = debug_window.is_visible().unwrap_or(false);
+        if is_visible {
+            debug_window.hide().map_err(|e| format!("隐藏窗口失败: {}", e))?;
+            println!("🙈 调试窗口已隐藏");
+        } else {
+            debug_window.show().map_err(|e| format!("显示窗口失败: {}", e))?;
+            debug_window.set_focus().map_err(|e| format!("聚焦窗口失败: {}", e))?;
+            println!("👁️ 调试窗口已显示");
+        }
+    } else {
+        // 窗口不存在，创建
+        let _ = WebviewWindowBuilder::new(
+            &app,
+            "debug",
+            WebviewUrl::App("debug.html".into())
+        )
+        .title("NoPickie - 调试器")
+        .resizable(true)
+        .inner_size(1024.0, 768.0)
+        .visible(true)
+        .build()
+        .map_err(|e| format!("创建调试窗口失败: {}", e))?;
+        
+        println!("✅ 调试窗口已创建");
+    }
+    
+    Ok(())
+}
+
+// Tauri 命令：打开截图文件夹
+#[tauri::command]
+async fn open_screenshots_folder() -> Result<(), String> {
+    println!("📂 打开截图文件夹");
+    
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/Users".to_string());
+    let screenshots_path = format!("{}/Pictures/NoPickie/screenshots", home);
+    
+    // 确保目录存在
+    std::fs::create_dir_all(&screenshots_path)
+        .map_err(|e| format!("创建目录失败: {}", e))?;
+    
+    println!("📍 截图目录: {}", screenshots_path);
+    
+    // macOS 使用 open 命令
+    #[cfg(target_os = "macos")]
+    {
+        let output = std::process::Command::new("open")
+            .arg(&screenshots_path)
+            .output()
+            .map_err(|e| format!("打开文件夹失败: {}", e))?;
+        
+        if output.status.success() {
+            println!("✅ 已打开截图文件夹");
+        } else {
+            let error_msg = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("打开文件夹失败: {}", error_msg));
+        }
+    }
+    
+    Ok(())
+}
+
 // Tauri 命令：显示通知条（简化版）
 #[tauri::command]
 async fn show_alert(app: tauri::AppHandle) -> Result<(), String> {
@@ -255,7 +324,7 @@ async fn show_alert(app: tauri::AppHandle) -> Result<(), String> {
         .resizable(false)
         .skip_taskbar(true)
         .visible(false)
-        .inner_size(320.0, 60.0)   // 长条形
+        .inner_size(360.0, 60.0)   // 长条形（加宽以容纳文案）
         .position(50.0, 50.0)       // 左上角
         .build()
         .map_err(|e| format!("创建通知条失败: {}", e))?;
@@ -264,16 +333,20 @@ async fn show_alert(app: tauri::AppHandle) -> Result<(), String> {
         window
     };
     
+    // 总是发送抖动事件（不管窗口是否已显示）
+    window.emit("shake-alert", ()).map_err(|e| format!("发送抖动事件失败: {}", e))?;
+    println!("📳 已发送抖动事件");
+    
     // 检查窗口是否已经可见
     let is_visible = window.is_visible().unwrap_or(false);
     
     if is_visible {
-        // 窗口已经显示，跳过重复显示
-        println!("ℹ️ 通知条已在显示中，跳过");
+        // 窗口已经显示，只抖动不重复显示
+        println!("ℹ️ 通知条已在显示中，触发抖动");
     } else {
         // 窗口未显示，显示它
         window.show().map_err(|e| format!("显示窗口失败: {}", e))?;
-        println!("✅ 通知条已显示");
+        println!("✅ 通知条已显示并抖动");
     }
     
     Ok(())
@@ -299,7 +372,9 @@ pub fn run() {
             start_detection,
             stop_detection,
             get_detection_status,
-            show_alert
+            show_alert,
+            toggle_debug_window,
+            open_screenshots_folder
         ])
         .setup(move |app| {
             // 获取主窗口并设置关闭行为（隐藏而不是销毁）

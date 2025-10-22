@@ -54,3 +54,14 @@ html, body {
 .close-btn:active {
   background: #c0c0c0;
 }
+
+/* 抖动动画 - 左右晃动 */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+  20%, 40%, 60%, 80% { transform: translateX(8px); }
+}
+
+.shake-animation {
+  animation: shake 0.5s ease-in-out;
+}

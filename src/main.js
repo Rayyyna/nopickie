@@ -8,6 +8,8 @@ let triggerCount;
 let frameCount;
 let startBtn;
 let stopBtn;
+let toggleDebugBtn;
+let openScreenshotsBtn;
 let eventLog;
 
 // 状态变量
@@ -26,11 +28,15 @@ window.addEventListener("DOMContentLoaded", async () => {
   frameCount = document.getElementById("frame-count");
   startBtn = document.getElementById("start-btn");
   stopBtn = document.getElementById("stop-btn");
+  toggleDebugBtn = document.getElementById("toggle-debug-btn");
+  openScreenshotsBtn = document.getElementById("open-screenshots-btn");
   eventLog = document.getElementById("event-log");
   
   // 绑定按钮事件
   startBtn.addEventListener("click", startDetection);
   stopBtn.addEventListener("click", stopDetection);
+  toggleDebugBtn.addEventListener("click", toggleDebugWindow);
+  openScreenshotsBtn.addEventListener("click", openScreenshotsFolder);
   
   // 监听 Python 事件
   setupEventListeners();
@@ -140,7 +146,7 @@ function setupEventListeners() {
     addLog("info", `🔄 状态变化: ${event.payload.previous_state} → ${state}`);
   });
   
-  // 检测到挠头
+  // 检测到手贱行为
   listen("scratch_detected", (event) => {
     const count = event.payload.trigger_count;
     const duration = event.payload.duration;
@@ -148,7 +154,7 @@ function setupEventListeners() {
     
     triggerCount.textContent = count;
     
-    addLog("warning", `⚠️ 检测到挠头！次数: ${count}, 持续: ${duration}s, 距离: ${distance}`);
+    addLog("warning", `😏 又手贱了！第 ${count} 次，持续 ${duration.toFixed(1)}s`);
     
     // 注释掉：通知已经由 Rust 后端直接发送，不需要前端调用了
     // sendScratchNotification(count, duration);
@@ -217,5 +223,25 @@ function addLog(type, message) {
   // 限制日志条数
   while (eventLog.children.length > MAX_LOG_ENTRIES) {
     eventLog.removeChild(eventLog.lastChild);
+  }
+}
+
+// 切换调试窗口
+async function toggleDebugWindow() {
+  try {
+    await invoke("toggle_debug_window");
+    addLog("info", "🧪 切换调试窗口");
+  } catch (error) {
+    addLog("error", `❌ 切换调试窗口失败: ${error}`);
+  }
+}
+
+// 打开截图文件夹
+async function openScreenshotsFolder() {
+  try {
+    await invoke("open_screenshots_folder");
+    addLog("success", "📂 已打开截图文件夹");
+  } catch (error) {
+    addLog("error", `❌ 打开文件夹失败: ${error}`);
   }
 }
