@@ -1,6 +1,6 @@
 {
   "name": "nopickie",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "智能挠头检测器 - Tauri 版本",
   "scripts": {
     "tauri": "tauri",

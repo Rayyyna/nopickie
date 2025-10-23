@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use chrono::{Local, Datelike, Duration, Weekday};
+use chrono::{Local, Datelike, Duration};
 
 const STATS_FILE: &str = "stats.json";
 

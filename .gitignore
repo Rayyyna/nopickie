@@ -51,3 +51,6 @@ src-tauri/Cargo.lock
 demo_stats.json
 load_demo_data.sh
 DEMO_DATA_README.md
+
+# 旧版本备份
+old_releases/
