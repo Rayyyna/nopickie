@@ -112,14 +112,14 @@ def main():
             # 定期发送视频帧到调试窗口（控制帧率避免过载）
             current_time = time.time()
             if current_time - last_frame_send_time >= FRAME_SEND_INTERVAL:
-                # 适度缩小图像（宽度调整到720px，保持清晰度）
+                # 高清画质（宽度调整到960px，更清晰）
                 h, w = processed_frame.shape[:2]
-                target_width = 720
+                target_width = 960
                 target_height = int(h * target_width / w)
                 display_frame = cv2.resize(processed_frame, (target_width, target_height))
                 
-                # 编码为JPEG（高质量）
-                _, buffer = cv2.imencode('.jpg', display_frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
+                # 编码为JPEG（超高质量 95%）
+                _, buffer = cv2.imencode('.jpg', display_frame, [cv2.IMWRITE_JPEG_QUALITY, 95])
                 # 转base64
                 img_b64 = base64.b64encode(buffer).decode('utf-8')
                 

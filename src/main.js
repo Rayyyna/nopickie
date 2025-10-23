@@ -12,10 +12,21 @@ let toggleDebugBtn;
 let openScreenshotsBtn;
 let eventLog;
 
+// 统计UI元素
+let todayCount;
+let weekLabel;
+let prevWeekBtn;
+let nextWeekBtn;
+let weekChart;
+let weekChartInstance;
+
 // 状态变量
 let isRunning = false;
 let eventCount = 0;
 const MAX_LOG_ENTRIES = 50;
+
+// 统计变量
+let currentWeekOffset = 0;
 
 // 系统通知已删除，改用自定义弹窗
 
@@ -32,11 +43,22 @@ window.addEventListener("DOMContentLoaded", async () => {
   openScreenshotsBtn = document.getElementById("open-screenshots-btn");
   eventLog = document.getElementById("event-log");
   
+  // 统计UI元素
+  todayCount = document.getElementById("today-count");
+  weekLabel = document.getElementById("week-label");
+  prevWeekBtn = document.getElementById("prev-week-btn");
+  nextWeekBtn = document.getElementById("next-week-btn");
+  weekChart = document.getElementById("weekChart");
+  
   // 绑定按钮事件
   startBtn.addEventListener("click", startDetection);
   stopBtn.addEventListener("click", stopDetection);
   toggleDebugBtn.addEventListener("click", toggleDebugWindow);
   openScreenshotsBtn.addEventListener("click", openScreenshotsFolder);
+  
+  // 统计按钮事件
+  prevWeekBtn.addEventListener("click", () => switchWeek(-1));
+  nextWeekBtn.addEventListener("click", () => switchWeek(1));
   
   // 监听 Python 事件
   setupEventListeners();
@@ -56,7 +78,13 @@ window.addEventListener("DOMContentLoaded", async () => {
     currentState.textContent = "-";
     statusBadge.textContent = "已停止";
     statusBadge.className = "badge badge-normal";
+    // 停止时刷新统计
+    loadTodayStats();
   });
+  
+  // 初始化统计数据
+  await loadTodayStats();
+  await loadWeekStats(0);
   
   // 添加欢迎日志
   addLog("info", "🎉 NoPickie 已就绪，点击「启动检测」开始");
@@ -147,7 +175,7 @@ function setupEventListeners() {
   });
   
   // 检测到手贱行为
-  listen("scratch_detected", (event) => {
+  listen("scratch_detected", async (event) => {
     const count = event.payload.trigger_count;
     const duration = event.payload.duration;
     const distance = event.payload.distance;
@@ -155,6 +183,15 @@ function setupEventListeners() {
     triggerCount.textContent = count;
     
     addLog("warning", `😏 又手贱了！第 ${count} 次，持续 ${duration.toFixed(1)}s`);
+    
+    // 记录触发到统计
+    try {
+      await invoke("record_trigger");
+      // 刷新今天的统计
+      await loadTodayStats();
+    } catch (error) {
+      console.error("记录触发失败:", error);
+    }
     
     // 注释掉：通知已经由 Rust 后端直接发送，不需要前端调用了
     // sendScratchNotification(count, duration);
@@ -245,3 +282,133 @@ async function openScreenshotsFolder() {
     addLog("error", `❌ 打开文件夹失败: ${error}`);
   }
 }
+
+// ============ 统计功能 ============
+
+// 加载今天统计（简化版）
+async function loadTodayStats() {
+  try {
+    const stats = await invoke("get_today_stats");
+    
+    // 只更新今天触发次数
+    todayCount.textContent = stats.trigger_count;
+    
+  } catch (error) {
+    console.error("加载今天统计失败:", error);
+  }
+}
+
+// 加载周统计
+async function loadWeekStats(weekOffset) {
+  try {
+    const weekData = await invoke("get_week_stats", { weekOffset });
+    
+    currentWeekOffset = weekOffset;
+    
+    // 更新周标签
+    weekLabel.textContent = weekData.week_label;
+    
+    // 更新按钮状态
+    prevWeekBtn.disabled = !weekData.can_go_prev;
+    nextWeekBtn.disabled = !weekData.can_go_next;
+    
+    // 渲染图表
+    renderWeekChart(weekData);
+    
+  } catch (error) {
+    console.error("加载周统计失败:", error);
+  }
+}
+
+// 切换周
+async function switchWeek(direction) {
+  const newOffset = currentWeekOffset + direction;
+  await loadWeekStats(newOffset);
+}
+
+// 渲染周图表（简化版：只显示触发次数，不包括今天）
+function renderWeekChart(weekData) {
+  const labels = [];
+  const data = [];
+  const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
+  
+  // 提取数据（图表不包括今天的数据）
+  weekData.days.forEach((day, index) => {
+    const weekStart = new Date(weekData.week_start);
+    weekStart.setDate(weekStart.getDate() + index);
+    const dateStr = weekStart.getDate().toString().padStart(2, '0');
+    labels.push(`${dateStr}\n${weekdays[index]}`);
+    
+    if (day && day.trigger_count !== undefined) {
+      data.push(day.trigger_count);
+    } else {
+      data.push(null); // 今天或无数据
+    }
+  });
+  
+  // 销毁旧图表
+  if (weekChartInstance) {
+    weekChartInstance.destroy();
+  }
+  
+  // 创建新图表（简化版：显示触发次数）
+  weekChartInstance = new Chart(weekChart, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: '触发次数',
+        data: data,
+        borderColor: '#FDB750',
+        backgroundColor: 'rgba(253, 183, 80, 0.1)',
+        borderWidth: 3,
+        pointRadius: 5,
+        pointBackgroundColor: '#FDB750',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointHoverRadius: 7,
+        tension: 0.3,
+        spanGaps: false // 不连接null数据点
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              if (context.parsed.y === null) {
+                return '无数据';
+              }
+              return `${context.parsed.y} 次`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1,
+            callback: function(value) {
+              return Math.floor(value);
+            }
+          },
+          grid: {
+            color: 'rgba(0, 0, 0, 0.05)'
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      }
+    }
+  });
+}
+

@@ -5,6 +5,9 @@ use std::io::{BufReader, BufRead};
 use std::thread;
 use std::path::PathBuf;
 
+mod stats;
+use stats::StatsManager;
+
 // Python 进程管理器
 pub struct PythonDetector {
     process: Option<Child>,
@@ -270,6 +273,36 @@ async fn toggle_debug_window(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+// Tauri 命令：记录触发（从前端调用）
+#[tauri::command]
+async fn record_trigger(
+    stats: tauri::State<'_, Arc<Mutex<StatsManager>>>
+) -> Result<(), String> {
+    if let Ok(mut stats_guard) = stats.lock() {
+        stats_guard.add_trigger()?;
+    }
+    Ok(())
+}
+
+// Tauri 命令：获取今天统计
+#[tauri::command]
+async fn get_today_stats(
+    stats: tauri::State<'_, Arc<Mutex<StatsManager>>>
+) -> Result<stats::TodayStatsResponse, String> {
+    let stats_guard = stats.lock().map_err(|e| e.to_string())?;
+    Ok(stats_guard.get_today_stats())
+}
+
+// Tauri 命令：获取周统计
+#[tauri::command]
+async fn get_week_stats(
+    week_offset: i32,
+    stats: tauri::State<'_, Arc<Mutex<StatsManager>>>
+) -> Result<stats::WeekStatsResponse, String> {
+    let stats_guard = stats.lock().map_err(|e| e.to_string())?;
+    stats_guard.get_week_stats(week_offset)
+}
+
 // Tauri 命令：打开截图文件夹
 #[tauri::command]
 async fn open_screenshots_folder() -> Result<(), String> {
@@ -362,19 +395,27 @@ pub fn run() {
     let detector = Arc::new(Mutex::new(PythonDetector::new()));
     // 创建应用状态
     let app_state = Arc::new(Mutex::new(AppState::new()));
+    // 创建统计管理器
+    let stats_manager = Arc::new(Mutex::new(
+        StatsManager::new().expect("无法初始化统计管理器")
+    ));
     let app_state_for_setup = app_state.clone();
     
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(detector.clone())
         .manage(app_state.clone())
+        .manage(stats_manager.clone())
         .invoke_handler(tauri::generate_handler![
             start_detection,
             stop_detection,
             get_detection_status,
             show_alert,
             toggle_debug_window,
-            open_screenshots_folder
+            open_screenshots_folder,
+            record_trigger,
+            get_today_stats,
+            get_week_stats
         ])
         .setup(move |app| {
             // 获取主窗口并设置关闭行为（隐藏而不是销毁）

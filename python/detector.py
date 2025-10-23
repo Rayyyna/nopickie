@@ -29,6 +29,7 @@ class HeadScratchDetector:
         self.face_exclude_radius = config['detection'].get('face_exclude_radius', 0.10)
         self.show_skeleton = config['display']['show_skeleton']
         self.show_distance = config['display']['show_distance']
+        self.enable_beauty_filter = config['display'].get('beauty_filter', True)
         
         # 初始化MediaPipe Pose
         self.mp_pose = mp.solutions.pose
@@ -49,8 +50,10 @@ class HeadScratchDetector:
         self.last_trigger_time = 0
         
         # 自适应检测区域
-        self.adaptive_head_zone = self.head_zone_radius  # 当前自适应半径
-        self.adaptive_multiplier = 1.2  # 基于肩宽的倍数（可调整）
+        self.adaptive_head_zone = self.head_zone_radius  # 当前自适应头部半径
+        self.adaptive_face_zone = self.face_exclude_radius  # 当前自适应脸部半径
+        self.adaptive_head_multiplier = 1.2  # 头部区域：基于肩宽的倍数
+        self.adaptive_face_multiplier = 0.8  # 脸部区域：基于肩宽的倍数
         
         # 距离历史（用于平滑）
         self.distance_history = deque(maxlen=self.smoothing_frames)
@@ -118,6 +121,10 @@ class HeadScratchDetector:
         # 绘制信息面板
         self._draw_info_panel(processed_frame, display_distance)
         
+        # 🎨 应用美颜滤镜
+        if self.enable_beauty_filter:
+            processed_frame = self._apply_beauty_filter(processed_frame)
+        
         # 返回统计信息
         stats = {
             'state': self.current_state,
@@ -131,13 +138,13 @@ class HeadScratchDetector:
     
     def _calculate_hand_head_distance(self, landmarks):
         """
-        改进的距离计算：区分挠头和摸脸 + 自适应检测区域
+        改进的距离计算：检测挠头和摸脸行为 + 自适应检测区域
         
         逻辑：
         1. 根据肩宽自适应调整检测区域大小
         2. 如果手在头部区域（大范围）内 → 可能是挠头
-        3. 但如果手在脸部中心区域（小范围）内 → 排除，这是摸脸
-        4. 返回到"头部区域且非脸部中心"的最小距离
+        3. 如果手在脸部中心区域（小范围）内 → 摸脸行为（也会触发 Warning）
+        4. 返回最小距离（挠头或摸脸，取较小值）
         
         Args:
             landmarks: MediaPipe检测到的关键点列表
@@ -161,16 +168,26 @@ class HeadScratchDetector:
             (right_shoulder.y - left_shoulder.y) ** 2
         )
         
-        # 自适应调整 head_zone_radius
+        # 自适应调整头部区域半径
         # 距离近 → 人大 → 肩宽大 → 检测圆圈大
         # 距离远 → 人小 → 肩宽小 → 检测圆圈小
-        adaptive_head_zone = shoulder_width * self.adaptive_multiplier
+        adaptive_head_zone = shoulder_width * self.adaptive_head_multiplier
         
         # 设置合理的上下限（避免极端值）
         adaptive_head_zone = max(0.20, min(adaptive_head_zone, 0.60))
         
+        # 自适应调整脸部区域半径（新增）
+        adaptive_face_zone = shoulder_width * self.adaptive_face_multiplier
+        
+        # 脸部区域限制（确保不会过大或过小）
+        adaptive_face_zone = max(0.12, min(adaptive_face_zone, 0.25))
+        
+        # 确保脸部区域 < 头部区域（保持逻辑清晰）
+        adaptive_face_zone = min(adaptive_face_zone, adaptive_head_zone * 0.7)
+        
         # 更新当前自适应半径（用于显示）
         self.adaptive_head_zone = adaptive_head_zone
+        self.adaptive_face_zone = adaptive_face_zone
         
         # 头部中心（使用眼睛和耳朵，更准确）
         head_center_x = (left_eye.x + right_eye.x + left_ear.x + right_ear.x) / 4
@@ -190,7 +207,7 @@ class HeadScratchDetector:
         
         # 使用自适应的检测区域（而不是固定值）
         head_zone_radius = adaptive_head_zone
-        face_exclude_radius = self.face_exclude_radius
+        face_zone_radius = adaptive_face_zone
         
         min_distance = 999.0  # 默认大值，表示不在检测区域
         
@@ -207,13 +224,14 @@ class HeadScratchDetector:
                 (hand.y - nose_y) ** 2
             )
             
-            # 判断逻辑：
-            # 1. 手离头部中心足够近（在自适应头部区域内）
-            # 2. 但手离鼻子足够远（不在脸部中心）
-            # 这样可以检测挠头顶、后脑勺、侧面，但排除摸眼睛、鼻子
-            if dist_to_head < head_zone_radius and dist_to_nose > face_exclude_radius:
-                # 这是挠头行为
+            # 判断逻辑（自适应双区域检测）：
+            # 1. 挠头：手在头部区域内且不在脸部区域 → 检测挠头顶、后脑勺、侧面
+            if dist_to_head < head_zone_radius and dist_to_nose > face_zone_radius:
                 min_distance = min(min_distance, dist_to_head)
+            
+            # 2. 摸脸：手在脸部区域内 → 检测摸眼睛、鼻子、嘴巴等行为
+            elif dist_to_nose <= face_zone_radius:
+                min_distance = min(min_distance, dist_to_nose)
         
         return min_distance
     
@@ -294,8 +312,8 @@ class HeadScratchDetector:
     
     def _draw_detection_zones(self, frame, landmarks):
         """
-        绘制检测区域（调试用）- 自适应版本
-        显示自适应的头部检测区域和脸部排除区域
+        绘制检测区域（调试用）- 全自适应版本
+        显示自适应的头部检测区域和自适应的脸部检测区域
         
         Args:
             frame: 要绘制的图像
@@ -338,11 +356,14 @@ class HeadScratchDetector:
         cv2.putText(frame, adaptive_text, (head_x - 60, head_y - head_radius - 10), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
         
-        # 绘制脸部排除区域（红色圆圈）
-        face_radius = int(self.face_exclude_radius * ((w + h) / 2))
-        cv2.circle(frame, (nose_x, nose_y), face_radius, (0, 0, 255), 2)
-        cv2.putText(frame, "Face Exclude", (nose_x - 50, nose_y + face_radius + 20), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+        # 绘制自适应的脸部检测区域（橙色圆圈，与头部绿色区分）
+        face_radius = int(self.adaptive_face_zone * ((w + h) / 2))
+        cv2.circle(frame, (nose_x, nose_y), face_radius, (0, 165, 255), 2)
+        
+        # 显示自适应脸部半径值
+        face_text = f"Face: {self.adaptive_face_zone:.2f}"
+        cv2.putText(frame, face_text, (nose_x - 40, nose_y + face_radius + 20), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 165, 255), 1)
     
     def _draw_info_panel(self, frame, distance):
         """
@@ -361,7 +382,7 @@ class HeadScratchDetector:
         
         # 半透明背景（增大高度以容纳新的 Zone 信息）
         overlay = frame.copy()
-        cv2.rectangle(overlay, (5, 5), (300, 210), (0, 0, 0), -1)
+        cv2.rectangle(overlay, (5, 5), (300, 240), (0, 0, 0), -1)
         cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
         
         # 文字参数
@@ -394,12 +415,14 @@ class HeadScratchDetector:
         cv2.putText(frame, f"Triggers: {self.trigger_count}", 
                     (x, y + line_height * 3), font, font_scale, (255, 255, 255), thickness)
         
-        # 显示自适应半径（用黄色显示，表示这是动态值）
-        cv2.putText(frame, f"Zone: {self.adaptive_head_zone:.2f}", 
+        # 显示自适应半径（用黄色显示头部，橙色显示脸部）
+        cv2.putText(frame, f"Head: {self.adaptive_head_zone:.2f}", 
                     (x, y + line_height * 4), font, font_scale, (0, 255, 255), thickness)
+        cv2.putText(frame, f"Face: {self.adaptive_face_zone:.2f}", 
+                    (x, y + line_height * 5), font, font_scale, (0, 165, 255), thickness)
         
         cv2.putText(frame, f"FPS: {self.fps:.1f}", 
-                    (x, y + line_height * 5), font, font_scale, (255, 255, 255), thickness)
+                    (x, y + line_height * 6), font, font_scale, (255, 255, 255), thickness)
         
         # 底部提示
         h = frame.shape[0]
@@ -434,6 +457,31 @@ class HeadScratchDetector:
             'trigger_count': self.trigger_count,
             'fps': self.fps
         }
+    
+    def _apply_beauty_filter(self, frame):
+        """
+        应用简单美颜滤镜
+        
+        效果：磨皮 + 美白 + 增加饱和度
+        
+        Args:
+            frame: 输入图像
+            
+        Returns:
+            美颜后的图像
+        """
+        # 1. 双边滤波 - 磨皮效果（保留边缘的同时平滑皮肤）
+        smoothed = cv2.bilateralFilter(frame, 9, 75, 75)
+        
+        # 2. 美白提亮（alpha=1.15 提高对比度，beta=20 增加亮度 - 更白）
+        brightened = cv2.convertScaleAbs(smoothed, alpha=1.15, beta=20)
+        
+        # 3. 增加饱和度
+        hsv = cv2.cvtColor(brightened, cv2.COLOR_BGR2HSV)
+        hsv[:, :, 1] = np.clip(hsv[:, :, 1] * 1.2, 0, 255).astype(np.uint8)
+        result = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+        
+        return result
     
     def cleanup(self):
         """清理资源"""

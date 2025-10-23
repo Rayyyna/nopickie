@@ -46,3 +46,8 @@ src-tauri/Cargo.lock
 *.tmp
 *.bak
 *.swp
+
+# Demo 数据（用于截图，不上传）
+demo_stats.json
+load_demo_data.sh
+DEMO_DATA_README.md

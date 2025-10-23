@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NoPickie - 防手贱助手</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script type="module" src="/main.js" defer></script>
   </head>
 
@@ -45,6 +46,33 @@
       <div class="controls-secondary">
         <button id="toggle-debug-btn" class="btn">🧪 调试器</button>
         <button id="open-screenshots-btn" class="btn">📂 截图文件夹</button>
+      </div>
+
+      <!-- 统计面板 -->
+      <div class="stats-panel">
+        <h2>📊 使用统计</h2>
+        
+        <!-- 今天数据卡片（简化为单个大卡片） -->
+        <div class="today-card-big">
+          <div class="today-subtitle">今天触发次数</div>
+          <div class="today-count">
+            <span id="today-count" class="count-value">0</span>
+            <span class="count-unit">次</span>
+          </div>
+        </div>
+        
+        <!-- 周视图图表 -->
+        <div class="week-chart-container">
+          <div class="chart-header">
+            <h3>📈 近7天历史（昨天及之前）</h3>
+            <div class="week-controls">
+              <button id="prev-week-btn" class="week-btn">◀</button>
+              <span id="week-label" class="week-label">本周</span>
+              <button id="next-week-btn" class="week-btn">▶</button>
+            </div>
+          </div>
+          <canvas id="weekChart"></canvas>
+        </div>
       </div>
 
       <div class="log-card">

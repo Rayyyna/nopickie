@@ -1,7 +1,7 @@
 {
   "detection": {
     "distance_threshold": 0.35,
-    "time_threshold": 3.5,
+    "time_threshold": 3.0,
     "smoothing_frames": 5,
     "head_zone_radius": 0.25,
     "face_exclude_radius": 0.10
@@ -11,7 +11,8 @@
     "show_distance": true,
     "window_width": 640,
     "window_height": 480,
-    "fps": 30
+    "fps": 30,
+    "beauty_filter": true
   },
   "camera": {
     "device_id": 0

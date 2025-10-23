@@ -11,8 +11,8 @@
     "windows": [
       {
         "title": "NoPickie - 挠头检测器",
-        "width": 800,
-        "height": 700,
+        "width": 850,
+        "height": 1100,
         "resizable": true,
         "fullscreen": false,
         "decorations": true,
